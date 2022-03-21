@@ -44,29 +44,25 @@
 // This seems to have something to do with the way the Cubase TypeScript exports.
 // 2 Cubase can be abstracted out to a Host Class with event registration. 3 Maybe Apply Typing.
 
-// <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-// 62: Object.defineProperty(exports, "__esModule", { value: true }); // <-- Delete this line above /\/\/\/\
-// <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
 // ============================================================================================
-
 
 //-----------------------------------------------------------------------------
 // 0. DRIVER SETUP - create driver object and detection information
 //-----------------------------------------------------------------------------
 
 // get the api's entry point - This like will show as an error, but still works
-import midiremote_api from 'midiremote_api_v1';
+// import midiremote_api from 'midiremote_api_v1';
+
+/// <reference path="../apiforts/midiremote_api_v1.d.ts" />
+
+// To enable type compleation
+//import midiremote_api = require('midiremote_api_v1');
+// To enable transpiling
+var midiremote_api = require('midiremote_api_v1');
 
 const expectedName = "Launch Control XL";
 
 // create the device driver main object
-
-// <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-// The preceding Line needs to be edited:
-// 81 : var deviceDriver = midiremote_api_v1_1.default.makeDeviceDriver('Oqion', expectedName, 'Oqion'); // <- change this
-// 81 : var deviceDriver = midiremote_api_v1_1.makeDeviceDriver('Oqion', expectedName, 'Oqion'); // <- to this
-// <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 const deviceDriver = midiremote_api.makeDeviceDriver(
     'Novation',

@@ -1,4 +1,3 @@
-"use strict";
 // ============================================================================================
 // Cubase / Nuendo 12+ Integration for Novation LaunchControl XL
 // V0.1 ALPHA - Written by: @Oqion staochastic@oqion.com 
@@ -59,24 +58,20 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-
-// <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-// 62: Object.defineProperty(exports, "__esModule", { value: true }); // <-- Delete this line above /\/\/\/\
-// <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 // ============================================================================================
 //-----------------------------------------------------------------------------
 // 0. DRIVER SETUP - create driver object and detection information
 //-----------------------------------------------------------------------------
 // get the api's entry point - This like will show as an error, but still works
-var midiremote_api_v1_1 = require("midiremote_api_v1");
+// import midiremote_api from 'midiremote_api_v1';
+/// <reference path="../apiforts/midiremote_api_v1.d.ts" />
+// To enable type compleation
+//import midiremote_api = require('midiremote_api_v1');
+// To enable transpiling
+var midiremote_api = require('midiremote_api_v1');
 var expectedName = "Launch Control XL";
 // create the device driver main object
-// <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-// The preceding Line needs to be edited:
-// 81 : var deviceDriver = midiremote_api_v1_1.default.makeDeviceDriver('Oqion', expectedName, 'Oqion'); // <- change this
-// 81 : var deviceDriver = midiremote_api_v1_1.makeDeviceDriver('Oqion', expectedName, 'Oqion'); // <- to this
-// <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-var deviceDriver = midiremote_api_v1_1.makeDeviceDriver('Novation', expectedName, 'Oqion');
+var deviceDriver = midiremote_api.makeDeviceDriver('Novation', expectedName, 'Oqion');
 //-----------------------------------------------------------------------------
 //  Macros
 // Does it log? Can't seem to attache the debuger. Since we still have the issue

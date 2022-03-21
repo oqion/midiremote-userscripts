@@ -3,12 +3,15 @@
     "baseUrl": ".",
     "paths": {
       ".": ["."],
-      "midiremote_api_v1": ["../api/v1"],
     },
     "module": "commonjs",
     "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": false,
     "target": "es5",
     "checkJs": true,
-    "lib": ["es5"]
-  }
+    "lib": ["es2015"]
+  },
+  "include": ["./*.ts"]
 }
