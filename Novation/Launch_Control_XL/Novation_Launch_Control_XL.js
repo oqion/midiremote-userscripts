@@ -1,7 +1,7 @@
 "use strict";
 // ============================================================================================
 // Cubase / Nuendo 12+ Integration for Novation LaunchControl XL
-// V0.1 ALPHA - Written by: @Oqion staochastic@oqion.com
+// V0.1 ALPHA - Written by: @Oqion staochastic@oqion.com 
 // With guidence from: @Skijumptoes, @MarcoE, @Jochen_Trappe and the Cubase Forum Community
 //
 // This software is not sactioned or approved by Steinberg - Use at your own risk.
@@ -959,9 +959,9 @@ var Commander = /** @class */ (function () {
     Commander.prototype.trigger = function (activeDevice, index, value) {
         if (index === void 0) { index = 0; }
         if (value === void 0) { value = 1; }
-        var element = this.elements[i];
+        var element = this.elements[index];
         // LOG("triggering: " + element + " " + i + " value: " + value)
-        this.elements[i].setProcessValue(activeDevice, value);
+        this.elements[index].setProcessValue(activeDevice, value);
     };
     Commander.prototype.triggerAll = function (activeDevice, value) {
         if (value === void 0) { value = 1; }
@@ -1439,8 +1439,9 @@ var focusedQuickControls = function (colour, page) {
     }
     return quickControls;
 };
+// para 1, low shel 1, high pass 1, high pass 2, para 2, low shelf 2, 3, 4
 var eqColunns1 = function (page) {
-    return [new Options(Red.low, [Orange.low, Orange.high, Green.low, Green.med, Orange.med, Red.low, Red.med, Red.high])
+    return [new Options(Red.low, [Yellow.low, Orange.high, Green.low, Green.med, Yellow.high, Red.low, Red.med, Red.high])
             .value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand1.mFilterType),
         new VariableScaled(Red).value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand1.mQ),
         new Variable(Red).value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand1.mFreq),
@@ -1448,24 +1449,27 @@ var eqColunns1 = function (page) {
         new Toggle(Red).value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand1.mOn)
     ];
 };
+// para 1, para 2
 var eqColunns2 = function (page) {
-    return [new Options(Orange.med, [Orange.low, Orange.med]).value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand2.mFilterType),
+    return [new Options(Yellow.high, [Yellow.low, Yellow.high]).value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand2.mFilterType),
         new VariableScaled(Orange).value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand2.mQ),
         new Variable(Orange).value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand2.mFreq),
         new Glide().value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand2.mGain),
         new Toggle(Red).value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand2.mOn)
     ];
 };
+// para 1, para 2
 var eqColunns3 = function (page) {
-    return [new Options(Orange.med, [Orange.low, Orange.med]).value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand3.mFilterType),
+    return [new Options(Yellow.high, [Yellow.low, Yellow.high]).value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand3.mFilterType),
         new VariableScaled(Amber).value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand3.mQ),
         new Variable(Amber).value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand3.mFreq),
         new Glide().value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand3.mGain),
         new Toggle(Red).value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand3.mOn)
     ];
 };
+// para 1, high shel 1, low pass 1, low pass 2, para 2, high shelf 2, 3, 4
 var eqColunns4 = function (page) {
-    return [new Options(Green.low, [Orange.low, Lime.low, Red.low, Red.med, Orange.med, Green.low, Green.med, Green.high])
+    return [new Options(Green.low, [Yellow.low, Lime.low, Red.low, Red.med, Yellow.high, Green.low, Green.med, Green.high])
             .value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand4.mFilterType),
         new VariableScaled(Green).value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand4.mQ),
         new Variable(Green).value(page.mHostAccess.mTrackSelection.mMixerChannel.mChannelEQ.mBand4.mFreq),
