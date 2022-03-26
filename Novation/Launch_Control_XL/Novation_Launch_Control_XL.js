@@ -436,20 +436,128 @@ var EventManager = /** @class */ (function () {
     }
     return EventManager;
 }());
-var LCXLEncoderAbstract = /** @class */ (function () {
-    function LCXLEncoderAbstract(device, address, cc, width, height, row, column) {
-        this.width = width;
-        this.height = height;
-        this.row = row;
-        this.column = column;
-        this.address = address;
-        this.cc = cc;
-        this.device = device;
+// Will also set a variable to control it. Only allowing
+// one per page per encoder, overwriting if already registered.
+var PageAwareEncoder = /** @class */ (function () {
+    function PageAwareEncoder() {
+        this.element = null;
         this.eventManagers = {};
         this.eventDisplayValueChangeRegistered = false;
         this.eventHostTitleRegistered = false;
         this.eventProcessValueChangeRegistered = false;
         this.currentpage = "";
+        this.functorDisplayValueChange = null;
+        this.functorHostTitle = null;
+        this.functorProcessValueChange = null;
+    }
+    PageAwareEncoder.prototype.resetPage = function (name) {
+        this.currentpage = name;
+        this._setFunctorTitleChange();
+        this._setFunctorDisplayValueChanged();
+        this._setFunctorProcessValueChanged();
+    };
+    PageAwareEncoder.prototype._getEventManager = function (pageName) {
+        var eventManager = this.eventManagers[pageName];
+        var isUndefined = "" + typeof eventManager;
+        if (isUndefined == "undefined") {
+            return null;
+        }
+        return eventManager;
+    };
+    PageAwareEncoder.prototype._makeEventManagerIfNeeded = function (pageName) {
+        var eventManager = this._getEventManager(pageName);
+        if (null == eventManager) {
+            eventManager = new EventManager(pageName);
+            this.eventManagers[pageName] = eventManager;
+        }
+        return eventManager;
+    };
+    PageAwareEncoder.prototype.registerEventDisplayValueChange = function (pageName, functor) {
+        // LOG("registerEventDisplayValueChange: " + this.cc + " for page: " + pageName);
+        var eventManager = this._makeEventManagerIfNeeded(pageName);
+        eventManager.functorEventDisplayValueChange = functor;
+        if (this.eventDisplayValueChangeRegistered == false) {
+            this.eventDisplayValueChangeRegistered = true;
+            this.element.mSurfaceValue.mOnDisplayValueChange =
+                function (activeDevice, valueString) {
+                    this._handleDisplayValueChanged(activeDevice, valueString);
+                }.bind(this);
+        }
+    };
+    PageAwareEncoder.prototype.registerEventHostTitle = function (pageName, functor) {
+        // LOG("registerEventHostTitle: " + this.cc + " for page: " + pageName);
+        var eventManager = this._makeEventManagerIfNeeded(pageName);
+        eventManager.functorHostTitle = functor;
+        if (this.eventHostTitleRegistered == false) {
+            this.eventHostTitleRegistered = true;
+            this.element.mSurfaceValue.mOnTitleChange =
+                function (activeDevice, value, units) {
+                    this._handleTitleChange(activeDevice, value, units);
+                }.bind(this);
+        }
+    };
+    PageAwareEncoder.prototype.registerEventProcessValueChange = function (pageName, functor) {
+        // LOG("registerEventProcessValueChange: " + this.cc + " for page: " + pageName)
+        var eventManager = this._makeEventManagerIfNeeded(pageName);
+        eventManager.functorProcessValueChange = functor;
+        if (this.eventProcessValueChangeRegistered == false) {
+            this.eventProcessValueChangeRegistered = true;
+            this.element.mSurfaceValue.mOnProcessValueChange =
+                function (activeDevice, value) {
+                    this._handleProcessValueChanged(activeDevice, value);
+                }.bind(this);
+        }
+    };
+    PageAwareEncoder.prototype._setFunctorTitleChange = function () {
+        this.functorHostTitle = null;
+        var eventManager = this._getEventManager(this.currentpage);
+        if (null != eventManager) {
+            this.functorHostTitle = eventManager.functorHostTitle;
+        }
+    };
+    PageAwareEncoder.prototype._setFunctorDisplayValueChanged = function () {
+        this.functorDisplayValueChange = null;
+        var eventManager = this._getEventManager(this.currentpage);
+        if (null != eventManager) {
+            this.functorDisplayValueChange = eventManager.functorEventDisplayValueChange;
+        }
+    };
+    PageAwareEncoder.prototype._setFunctorProcessValueChanged = function () {
+        this.functorProcessValueChange = null;
+        var eventManager = this._getEventManager(this.currentpage);
+        if (null != eventManager) {
+            this.functorProcessValueChange = eventManager.functorProcessValueChange;
+        }
+    };
+    PageAwareEncoder.prototype._handleTitleChange = function (activeDevice, value, units) {
+        if (null != this.functorHostTitle) {
+            this.functorHostTitle(activeDevice, value, units);
+        }
+    };
+    PageAwareEncoder.prototype._handleDisplayValueChanged = function (activeDevice, valueString) {
+        if (null != this.functorDisplayValueChange) {
+            this.functorDisplayValueChange(activeDevice, valueString);
+        }
+    };
+    PageAwareEncoder.prototype._handleProcessValueChanged = function (activeDevice, value) {
+        if (null != this.functorProcessValueChange) {
+            this.functorProcessValueChange(activeDevice, value);
+        }
+    };
+    return PageAwareEncoder;
+}());
+var LCXLEncoderAbstract = /** @class */ (function (_super) {
+    __extends(LCXLEncoderAbstract, _super);
+    function LCXLEncoderAbstract(device, address, cc, width, height, row, column) {
+        var _this = _super.call(this) || this;
+        _this.width = width;
+        _this.height = height;
+        _this.row = row;
+        _this.column = column;
+        _this.address = address;
+        _this.cc = cc;
+        _this.device = device;
+        return _this;
     }
     LCXLEncoderAbstract.prototype.setColour = function (activeDevice, colour) {
         this.device.setEncoderColour(activeDevice, this.address, colour);
@@ -465,98 +573,8 @@ var LCXLEncoderAbstract = /** @class */ (function () {
             .setOutputPort(this.device.MIDIOut)
             .bindToControlChange(this.device.MIDIChannel, this.cc);
     };
-    // Will also set a variable to control it. Only allowing
-    // one per page per encoder, overwriting if already registered.
-    LCXLEncoderAbstract.prototype.resetPage = function (name) {
-        this.currentpage = name;
-    };
-    LCXLEncoderAbstract.prototype._getEventManager = function (pageName) {
-        var eventManager = this.eventManagers[pageName];
-        var isUndefined = "" + typeof eventManager;
-        if (isUndefined == "undefined") {
-            return null;
-        }
-        return eventManager;
-    };
-    LCXLEncoderAbstract.prototype._makeEventManagerIfNeeded = function (pageName) {
-        var eventManager = this._getEventManager(pageName);
-        if (null == eventManager) {
-            eventManager = new EventManager(pageName);
-            this.eventManagers[pageName] = eventManager;
-        }
-        return eventManager;
-    };
-    LCXLEncoderAbstract.prototype.registerEventDisplayValueChange = function (pageName, functor) {
-        // LOG("registerEventDisplayValueChange: " + this.cc + " for page: " + pageName);
-        var eventManager = this._makeEventManagerIfNeeded(pageName);
-        eventManager.functorEventDisplayValueChange = functor;
-        if (this.eventDisplayValueChangeRegistered == false) {
-            this.eventDisplayValueChangeRegistered = true;
-            this.element.mSurfaceValue.mOnDisplayValueChange =
-                function (activeDevice, valueString) {
-                    this._handleDisplayValueChanged(activeDevice, valueString);
-                }.bind(this);
-        }
-    };
-    LCXLEncoderAbstract.prototype.registerEventHostTitle = function (pageName, functor) {
-        // LOG("registerEventHostTitle: " + this.cc + " for page: " + pageName);
-        var eventManager = this._makeEventManagerIfNeeded(pageName);
-        eventManager.functorHostTitle = functor;
-        if (this.eventHostTitleRegistered == false) {
-            this.eventHostTitleRegistered = true;
-            this.element.mSurfaceValue.mOnTitleChange =
-                function (activeDevice, value, units) {
-                    this._handleTitleChange(activeDevice, value, units);
-                }.bind(this);
-        }
-    };
-    LCXLEncoderAbstract.prototype.registerEventProcessValueChange = function (pageName, functor) {
-        // LOG("registerEventProcessValueChange: " + this.cc + " for page: " + pageName)
-        var eventManager = this._makeEventManagerIfNeeded(pageName);
-        eventManager.functorProcessValueChange = functor;
-        if (this.eventProcessValueChangeRegistered == false) {
-            this.eventProcessValueChangeRegistered = true;
-            this.element.mSurfaceValue.mOnProcessValueChange =
-                function (activeDevice, value) {
-                    this._handleProcessValueChanged(activeDevice, value);
-                }.bind(this);
-        }
-    };
-    LCXLEncoderAbstract.prototype._handleTitleChange = function (activeDevice, value, units) {
-        // LOG("_handleTitleChange: " + this.cc + " for page: " + this.currentpage);
-        var eventManager = this._getEventManager(this.currentpage);
-        if (null != eventManager) {
-            // LOG("managerFound: " + this.cc + " for page: " + this.currentpage);
-            if (null != eventManager.functorHostTitle) {
-                //  LOG("functorFound: " + this.cc + " for page: " + this.currentpage);
-                eventManager.functorHostTitle(activeDevice, value, units);
-            }
-        }
-    };
-    LCXLEncoderAbstract.prototype._handleDisplayValueChanged = function (activeDevice, valueString) {
-        // LOG("_handleDisplayValueChanged: " + this.cc + " for page: " + this.currentpage);
-        var eventManager = this._getEventManager(this.currentpage);
-        if (null != eventManager) {
-            // LOG("managerFound: " + this.cc + " for page: " + this.currentpage);
-            if (null != eventManager.functorEventDisplayValueChange) {
-                //  LOG("functorFound: " + this.cc + " for page: " + this.currentpage);
-                eventManager.functorEventDisplayValueChange(activeDevice, valueString);
-            }
-        }
-    };
-    LCXLEncoderAbstract.prototype._handleProcessValueChanged = function (activeDevice, value) {
-        // LOG("_handleProcessValueChanged: " + this.cc + " for page: " + this.currentpage);
-        var eventManager = this._getEventManager(this.currentpage);
-        if (null != eventManager) {
-            //  LOG("managerFound: " + this.cc + " for page: " + this.currentpage);
-            if (null != eventManager.functorProcessValueChange) {
-                //   LOG("functorFound: " + this.cc + " for page: " + this.currentpage);
-                eventManager.functorProcessValueChange(activeDevice, value);
-            }
-        }
-    };
     return LCXLEncoderAbstract;
-}());
+}(PageAwareEncoder));
 var LCXLKnob = /** @class */ (function (_super) {
     __extends(LCXLKnob, _super);
     function LCXLKnob(device, address, cc, row, column) {

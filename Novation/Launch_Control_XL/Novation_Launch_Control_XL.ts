@@ -522,8 +522,139 @@ class EventManager {
     }
 }
 
-abstract class LCXLEncoderAbstract
-{
+// Will also set a variable to control it. Only allowing
+// one per page per encoder, overwriting if already registered.
+abstract class PageAwareEncoder {
+    element;
+    eventManagers;
+    eventDisplayValueChangeRegistered;
+    eventHostTitleRegistered;
+    eventProcessValueChangeRegistered;
+    currentpage;
+    functorDisplayValueChange;
+    functorHostTitle;
+    functorProcessValueChange;
+    
+    constructor() {
+        this.element = null;
+        this.eventManagers = {};
+        this.eventDisplayValueChangeRegistered = false;
+        this.eventHostTitleRegistered = false;
+        this.eventProcessValueChangeRegistered = false;
+        this.currentpage = "";
+        this.functorDisplayValueChange = null;
+        this.functorHostTitle = null;
+        this.functorProcessValueChange = null;
+    }
+
+    resetPage(name) {
+        this.currentpage = name;
+        this._setFunctorTitleChange();
+        this._setFunctorDisplayValueChanged();
+        this._setFunctorProcessValueChanged();
+    }
+
+   _getEventManager(pageName) {
+       var eventManager = this.eventManagers[pageName];
+       var isUndefined = "" + typeof eventManager;
+       if (isUndefined == "undefined") {
+           return null;
+       }
+       return eventManager;
+   }
+
+   _makeEventManagerIfNeeded(pageName) {
+       var eventManager = this._getEventManager(pageName);
+       if (null == eventManager) {
+           eventManager = new EventManager(pageName);
+           this.eventManagers[pageName] = eventManager;
+       }
+       return eventManager;
+   }
+
+   registerEventDisplayValueChange(pageName, functor){
+       // LOG("registerEventDisplayValueChange: " + this.cc + " for page: " + pageName);
+       var eventManager = this._makeEventManagerIfNeeded(pageName);
+       eventManager.functorEventDisplayValueChange = functor;
+       if( this.eventDisplayValueChangeRegistered == false) {
+           this.eventDisplayValueChangeRegistered = true;
+           this.element.mSurfaceValue.mOnDisplayValueChange = 
+           function(activeDevice, valueString) {
+               this._handleDisplayValueChanged(activeDevice, valueString);
+           }.bind(this);
+       }
+   }
+   
+   registerEventHostTitle(pageName, functor){
+       // LOG("registerEventHostTitle: " + this.cc + " for page: " + pageName);
+       var eventManager = this._makeEventManagerIfNeeded(pageName);
+       eventManager.functorHostTitle = functor;
+       if( this.eventHostTitleRegistered == false) {
+           this.eventHostTitleRegistered = true;
+           this.element.mSurfaceValue.mOnTitleChange = 
+           function (activeDevice, value, units) {
+                   this._handleTitleChange(activeDevice, value, units);
+           }.bind(this);
+       }
+   }
+
+   registerEventProcessValueChange(pageName, functor){
+       // LOG("registerEventProcessValueChange: " + this.cc + " for page: " + pageName)
+       var eventManager = this._makeEventManagerIfNeeded(pageName);
+       eventManager.functorProcessValueChange = functor;
+       if( this.eventProcessValueChangeRegistered == false) {
+           this.eventProcessValueChangeRegistered = true;
+           this.element.mSurfaceValue.mOnProcessValueChange = 
+           function(activeDevice, value) {
+               this._handleProcessValueChanged(activeDevice, value);
+           }.bind(this);
+       }
+   }
+
+   _setFunctorTitleChange() {
+       this.functorHostTitle = null;
+       var eventManager = this._getEventManager(this.currentpage);
+       if(null != eventManager) {
+           this.functorHostTitle = eventManager.functorHostTitle;
+       }
+   }
+
+   _setFunctorDisplayValueChanged(){
+       this.functorDisplayValueChange = null;
+       var eventManager = this._getEventManager(this.currentpage);
+       if(null != eventManager) {
+           this.functorDisplayValueChange = eventManager.functorEventDisplayValueChange;
+       }
+   }
+
+   _setFunctorProcessValueChanged(){
+       this.functorProcessValueChange = null;
+       var eventManager = this._getEventManager(this.currentpage);
+       if(null != eventManager) {
+           this.functorProcessValueChange = eventManager.functorProcessValueChange;
+       }
+   }
+
+   _handleTitleChange(activeDevice, value, units) {
+       if(null != this.functorHostTitle) {
+          this.functorHostTitle(activeDevice, value, units);
+       }
+   }
+
+   _handleDisplayValueChanged(activeDevice, valueString){
+       if(null != this.functorDisplayValueChange) {
+           this.functorDisplayValueChange(activeDevice, valueString);
+       }
+   }
+
+   _handleProcessValueChanged(activeDevice, value){
+       if(null != this.functorProcessValueChange) {
+           this.functorProcessValueChange(activeDevice, value);
+       }
+   }
+}
+
+abstract class LCXLEncoderAbstract extends PageAwareEncoder {
     address;
     cc;
     device;
@@ -531,14 +662,9 @@ abstract class LCXLEncoderAbstract
     height;
     row;
     column;
-    element;
-    eventManagers;
-    eventDisplayValueChangeRegistered;
-    eventHostTitleRegistered;
-    eventProcessValueChangeRegistered;
-    currentpage;
 
     constructor(device, address, cc, width, height, row, column) {
+        super();
         this.width = width;
         this.height = height;
         this.row = row;
@@ -546,11 +672,6 @@ abstract class LCXLEncoderAbstract
         this.address = address;
         this.cc = cc;
         this.device = device;
-        this.eventManagers = {};
-        this.eventDisplayValueChangeRegistered = false;
-        this.eventHostTitleRegistered = false;
-        this.eventProcessValueChangeRegistered = false;
-        this.currentpage = "";
     }
 
     setColour( activeDevice, colour ) {
@@ -572,105 +693,6 @@ abstract class LCXLEncoderAbstract
 
     abstract makeElement(surface, column, row);
 
-    // Will also set a variable to control it. Only allowing
-    // one per page per encoder, overwriting if already registered.
-    
-     resetPage(name) {
-         this.currentpage = name;
-     }
-
-    _getEventManager(pageName) {
-        var eventManager = this.eventManagers[pageName];
-        var isUndefined = "" + typeof eventManager;
-        if (isUndefined == "undefined") {
-            return null;
-        }
-        return eventManager;
-    }
-
-    _makeEventManagerIfNeeded(pageName) {
-        var eventManager = this._getEventManager(pageName);
-        if (null == eventManager) {
-            eventManager = new EventManager(pageName);
-            this.eventManagers[pageName] = eventManager;
-        }
-        return eventManager;
-    }
-
-    registerEventDisplayValueChange(pageName, functor){
-        // LOG("registerEventDisplayValueChange: " + this.cc + " for page: " + pageName);
-        var eventManager = this._makeEventManagerIfNeeded(pageName);
-        eventManager.functorEventDisplayValueChange = functor;
-        if( this.eventDisplayValueChangeRegistered == false) {
-            this.eventDisplayValueChangeRegistered = true;
-            this.element.mSurfaceValue.mOnDisplayValueChange = 
-            function(activeDevice, valueString) {
-                this._handleDisplayValueChanged(activeDevice, valueString);
-            }.bind(this);
-        }
-    }
-    
-    registerEventHostTitle(pageName, functor){
-        // LOG("registerEventHostTitle: " + this.cc + " for page: " + pageName);
-        var eventManager = this._makeEventManagerIfNeeded(pageName);
-        eventManager.functorHostTitle = functor;
-        if( this.eventHostTitleRegistered == false) {
-            this.eventHostTitleRegistered = true;
-            this.element.mSurfaceValue.mOnTitleChange = 
-            function (activeDevice, value, units) {
-                    this._handleTitleChange(activeDevice, value, units);
-            }.bind(this);
-        }
-    }
-
-    registerEventProcessValueChange(pageName, functor){
-        // LOG("registerEventProcessValueChange: " + this.cc + " for page: " + pageName)
-        var eventManager = this._makeEventManagerIfNeeded(pageName);
-        eventManager.functorProcessValueChange = functor;
-        if( this.eventProcessValueChangeRegistered == false) {
-            this.eventProcessValueChangeRegistered = true;
-            this.element.mSurfaceValue.mOnProcessValueChange = 
-            function(activeDevice, value) {
-                this._handleProcessValueChanged(activeDevice, value);
-            }.bind(this);
-        }
-    }
-
-    _handleTitleChange(activeDevice, value, units) {
-        // LOG("_handleTitleChange: " + this.cc + " for page: " + this.currentpage);
-        var eventManager = this._getEventManager(this.currentpage);
-        if(null != eventManager) {
-           // LOG("managerFound: " + this.cc + " for page: " + this.currentpage);
-            if( null != eventManager.functorHostTitle) {
-              //  LOG("functorFound: " + this.cc + " for page: " + this.currentpage);
-                eventManager.functorHostTitle(activeDevice, value, units);
-            }
-        }
-    }
-
-    _handleDisplayValueChanged(activeDevice, valueString){
-        // LOG("_handleDisplayValueChanged: " + this.cc + " for page: " + this.currentpage);
-        var eventManager = this._getEventManager(this.currentpage);
-        if(null != eventManager) {
-           // LOG("managerFound: " + this.cc + " for page: " + this.currentpage);
-            if( null != eventManager.functorEventDisplayValueChange) {
-              //  LOG("functorFound: " + this.cc + " for page: " + this.currentpage);
-                eventManager.functorEventDisplayValueChange(activeDevice, valueString);
-            }
-        }
-    }
-
-    _handleProcessValueChanged(activeDevice, value){
-        // LOG("_handleProcessValueChanged: " + this.cc + " for page: " + this.currentpage);
-        var eventManager = this._getEventManager(this.currentpage);
-        if(null != eventManager) {
-          //  LOG("managerFound: " + this.cc + " for page: " + this.currentpage);
-            if(null != eventManager.functorProcessValueChange){
-             //   LOG("functorFound: " + this.cc + " for page: " + this.currentpage);
-                eventManager.functorProcessValueChange(activeDevice, value);
-            }
-        }
-    }
 }
 
 
