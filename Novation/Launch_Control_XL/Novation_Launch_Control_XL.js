@@ -1697,36 +1697,5 @@ PageInstrument.faders(trackQuickControlsGlide(PageInstrument.page));
 PageInstrument.topButtonRow(nudgeButtons());
 // Transport with instrument instead of edit channel
 setTransportEditTrackButtonsInstrument(PageInstrument);
-// Cue For 4 piece recording
-// -----------------------------------------------------------------------------
-// WIP Should work, but I can't compleatly test this right now
-// if 4 cue channels are set this controls the send for the selected track
-// with talkback at the top, switch it on, then it's talkback volume.
-var cueTrackColumn = function (surface, page, index) {
-    var cueChannel = page.mHostAccess.mControlRoom.getCueChannelByIndex(index);
-    var cueChannelTalkback = new VariableSwitch(Yellow, new Commander("cue" + index + "Talkback").addTriggerValue(surface, page, cueChannel.mTalkbackEnabledValue), "0", "pickup").value(cueChannel.mTalkbackLevelValue);
-    var cueSend = page.mHostAccess.mTrackSelection.mMixerChannel.mCueSends.getByIndex(index);
-    var cueTrackPrepost = new Switch(Lime.high, Orange.high).value(cueSend.mPrePost);
-    var cueTrackPan = new Variable(Amber).value(cueSend.mPan);
-    var cueTrackLevel = new Glide().value(cueSend.mLevel);
-    var cueTrackOn = new Toggle(Lime).value(cueSend.mOn);
-    return [cueChannelTalkback, cueTrackPrepost, cueTrackPan, cueTrackLevel, cueTrackOn];
-};
-// Control one of 4 cue channels.  
-var cueChannelColumn = function (surface, page, index) {
-    var cueChannel = page.mHostAccess.mControlRoom.getCueChannelByIndex(index);
-    var cusChannelBypassInserts = new Switch(Lime.high, Orange.high).value(cueChannel.mBypassInserts);
-    var cusChannelClickPan = new Variable(Amber).value(cueChannel.mMetronomeClickPanValue);
-    var cusChanneClickSwitch = new VariableSwitch(Green, new Commander("cue" + index + "Metronome").addTriggerValue(surface, page, cueChannel.mMetronomeClickActiveValue), "0", "pickup").value(cueChannel.mMetronomeClickLevelValue);
-    var cusChannelLevel = new Glide().value(cueChannel.mLevelValue);
-    var cusChannelMute = new Toggle(Green).value(cueChannel.mMuteValue);
-    return [cusChannelBypassInserts, cusChannelClickPan, cusChanneClickSwitch, cusChannelLevel, cusChannelMute];
-};
-var PageCue = new LCXLPageTrack("Cue", deviceDriver, lcxlEncoders);
-for (var i = 0; i < 4; i++) {
-    PageCue.columnAboveButtomBotton(cueChannelColumn(deviceDriver.mSurface, PageCue.page, i), i);
-}
-for (var i = 4; i < 8; i++) {
-    PageCue.columnAboveButtomBotton(cueTrackColumn(deviceDriver.mSurface, PageCue.page, i), i);
-}
-setTransportEditTrackButtons(PageCue);
+
+
