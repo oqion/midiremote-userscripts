@@ -2166,7 +2166,7 @@ for( var i = 0; i < 4; i++) {
 }
 
 for( var i = 4; i < 8; i++) {
-    PageCue.columnAboveButtomBotton( cueTrackColumn(deviceDriver.mSurface, PageCue.page, i), i);
+    PageCue.columnAboveButtomBotton( cueTrackColumn(deviceDriver.mSurface, PageCue.page, i-4), i);
 }
 
 setTransportEditTrackButtons(PageCue);
