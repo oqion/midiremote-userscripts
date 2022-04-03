@@ -1243,7 +1243,7 @@ class Commander {
 
     trigger(activeDevice, index = 0, value = 1) {
         var element = this.elements[index];
-        // LOG("triggering: " + element + " " + i + " value: " + value)
+        //  LOG("triggering: " + element + " " + i + " value: " + value)
         this.elements[index].setProcessValue(activeDevice, value)
     }
 
@@ -1339,6 +1339,70 @@ class Options extends LCXLController {
                 break;
             }
         }
+    }
+}
+
+// controls a knob or slider used to slect multiple options.
+class OptionsTrigger extends LCXLController {
+    count;
+    downCommands;
+    upCommands;
+    slices;
+    lastSlice;
+    constructor(colour, downCommands, upCommands, count=127){
+        super(colour, "jump");
+        this.downCommands = downCommands;
+        this.upCommands = upCommands;
+        this.slices = []
+        this.registerEventProcessValueChange = true;
+        if( count > 127 || count < 0)
+        {
+            count = 127;
+        }
+        this.count = count;
+        this.lastSlice = -1;
+
+        var size = 1/this.count;
+        for(var i = 0; i < this.count; i++)
+        {
+            this.slices.push( (i+1) * size);
+        }
+    }
+
+    handleProcessValueChanged(activeDevice, value){
+        // LOG("---------- OptionsTrigger handleProcessValueChanged value: " + value);
+        var sliceNow = 0;
+        for(var i=0; i < this.count; i++) {
+            if(value <= this.slices[i] || i == this.count-1) {
+                sliceNow = i;
+                break;
+            }
+        }
+
+        // LOG("---------- OptionsTrigger sliceNow: " + sliceNow);
+        // LOG("---------- OptionsTrigger lastSlice: " + this.lastSlice);
+
+        if( sliceNow < this.lastSlice)
+        {
+            var difference = this.lastSlice - sliceNow;
+            // LOG("---------- OptionsTrigger sliceNow < this.lastSlice difference:" + difference);
+
+            for(var i=0; i < difference; i++)
+            {
+                this.downCommands.triggerAll(activeDevice)
+            }
+        } else if( sliceNow > this.lastSlice)
+        {
+            var difference =  sliceNow - this.lastSlice;
+            // LOG("---------- OptionsTrigger sliceNow > this.lastSlice difference:" + difference);
+
+            for(var i=0; i < difference; i++)
+            {
+                this.upCommands.triggerAll(activeDevice)
+            }
+        }
+
+        this.lastSlice = sliceNow;
     }
 }
 
@@ -1966,6 +2030,18 @@ var setTransportEditTrackButtonsInstrument = function(lcxlPage){
     lcxlPage.sideButtons(trackButtonCommands(lcxlPage.page));
 }
 
+var zoomKnob = function(colour, surface, page) {
+    var zoom = new OptionsTrigger(colour, 
+        new Commander("zoomOut").
+        addTriggerCommand(surface, page, 'Zoom', 'Zoom Out').
+        addTriggerCommand(surface, page, 'Zoom', 'Zoom Out Vertically'),
+        new Commander("zoomIn").
+            addTriggerCommand(surface, page, 'Zoom', 'Zoom In').
+            addTriggerCommand(surface, page, 'Zoom', 'Zoom In Vertically'),     
+        32);
+    return zoom;
+}
+
 //-----------------------------------------------------------------------------
 // 7. Launch Control Setup
 //-----------------------------------------------------------------------------
@@ -2104,15 +2180,18 @@ setTransportEditTrackButtons(PageSends);
 var PageInstrument = new LCXLPageTrack("Instrument", deviceDriver, lcxlEncoders);
 
 // Top two rows of knobs (except for the last two) are assignable in the GUI.
-for( var i = 0; i < 7; i++) {
+for( var i = 0; i < 6; i++) {
     PageInstrument.setKnobTop( new Variable(Orange), i);
     PageInstrument.setKnobMiddle( new Variable(Orange), i);
 
 }
 
+PageInstrument.setKnobTop(zoomKnob(Lime, deviceDriver.mSurface, PageInstrument.page),6)
+PageInstrument.setKnobMiddle(new Switch(Red.high, Red.off).value(PageInstrument.page.mHostAccess.mFocusedQuickControls.mFocusLockedValue ),6)
+
 // smart control
-PageInstrument.setKnobTop(new VariableScaled(Red).value(PageInstrument.page.mHostAccess.mMouseCursor.mValueUnderMouse ),7)
-PageInstrument.setKnobMiddle(new Switch(Amber.low, Red.high).value(PageInstrument.page.mHostAccess.mMouseCursor.mValueLocked ),7)
+PageInstrument.setKnobTop(new VariableScaled(Green).value(PageInstrument.page.mHostAccess.mMouseCursor.mValueUnderMouse ),7)
+PageInstrument.setKnobMiddle(new Switch(Green.off, Green.med).value(PageInstrument.page.mHostAccess.mMouseCursor.mValueLocked ),7)
 
 // QCs
 PageInstrument.lowerKnobRow(focusedQuickControls(Red, PageInstrument.page));
@@ -2123,7 +2202,6 @@ PageInstrument.topButtonRow(nudgeButtons());
 
 // Transport with instrument instead of edit channel
 setTransportEditTrackButtonsInstrument(PageInstrument);
-
 
 // Cue For 4 piece recording
 // -----------------------------------------------------------------------------
