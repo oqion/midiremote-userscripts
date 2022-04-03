@@ -1691,11 +1691,10 @@ for (var i = 0; i < 7; i++) {
 PageInstrument.setKnobTop(new VariableScaled(Red).value(PageInstrument.page.mHostAccess.mMouseCursor.mValueUnderMouse), 7);
 PageInstrument.setKnobMiddle(new Switch(Amber.low, Red.high).value(PageInstrument.page.mHostAccess.mMouseCursor.mValueLocked), 7);
 // QCs
-PageInstrument.lowerKnobRow(focusedQuickControls(Red, PageTrack.page));
+PageInstrument.lowerKnobRow(focusedQuickControls(Red, PageInstrument.page));
 PageInstrument.faders(trackQuickControlsGlide(PageInstrument.page));
 // Nuge Nuttons
 PageInstrument.topButtonRow(nudgeButtons());
 // Transport with instrument instead of edit channel
 setTransportEditTrackButtonsInstrument(PageInstrument);
-
 

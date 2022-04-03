@@ -2115,7 +2115,7 @@ PageInstrument.setKnobTop(new VariableScaled(Red).value(PageInstrument.page.mHos
 PageInstrument.setKnobMiddle(new Switch(Amber.low, Red.high).value(PageInstrument.page.mHostAccess.mMouseCursor.mValueLocked ),7)
 
 // QCs
-PageInstrument.lowerKnobRow(focusedQuickControls(Red, PageTrack.page));
+PageInstrument.lowerKnobRow(focusedQuickControls(Red, PageInstrument.page));
 PageInstrument.faders(trackQuickControlsGlide(PageInstrument.page));
 
 // Nuge Nuttons
