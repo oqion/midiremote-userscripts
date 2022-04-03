@@ -64,7 +64,7 @@ var __extends = (this && this.__extends) || (function () {
 //-----------------------------------------------------------------------------
 // get the api's entry point - This like will show as an error, but still works
 // import midiremote_api from 'midiremote_api_v1';
-/// <reference path="../apiforts/midiremote_api_v1.d.ts" />
+//// <reference path="../apiforts/midiremote_api_v1.d.ts" />
 // To enable type compleation
 //import midiremote_api = require('midiremote_api_v1');
 // To enable transpiling
