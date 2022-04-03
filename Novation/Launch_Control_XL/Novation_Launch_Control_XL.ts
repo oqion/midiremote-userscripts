@@ -1214,7 +1214,6 @@ class Commander {
 
     addTriggerValue(surface, page, binding) {     
         var element = surface.makeCustomValueVariable(this.name + this.elements.length);
-        // LOG("value- " + JSON.stringify(element))
         page.makeValueBinding(element, binding).setTypeToggle();
         this.elements.push(element);
         return this;
@@ -1222,7 +1221,6 @@ class Commander {
 
     addTriggerCommand(surface, page, commandCategory, commandName) {
         var element = surface.makeCustomValueVariable(this.name + this.elements.length);
-        // LOG("command- " + JSON.stringify(element))
         page.makeCommandBinding(element, commandCategory, commandName);
         this.elements.push(element);
         return this;
@@ -1230,7 +1228,6 @@ class Commander {
 
     addTriggerAction(surface, page, binding) {
         var element = surface.makeCustomValueVariable(this.name + this.elements.length);
-        // LOG("action- " + JSON.stringify(element))
         page.makeActionBinding(element, binding);
         this.elements.push(element);
         return this;
@@ -1242,13 +1239,10 @@ class Commander {
     }
 
     trigger(activeDevice, index = 0, value = 1) {
-        var element = this.elements[index];
-        //  LOG("triggering: " + element + " " + i + " value: " + value)
         this.elements[index].setProcessValue(activeDevice, value)
     }
 
     triggerAll(activeDevice, value = 1){
-        // LOG("trigger: " + this.elements.length )
         for( var i = 0; i < this.elements.length; i++) {
             this.trigger(activeDevice, i, value);
         }
@@ -1342,14 +1336,13 @@ class Options extends LCXLController {
     }
 }
 
-// controls a knob or slider used to slect multiple options.
 class OptionsTrigger extends LCXLController {
     count;
     downCommands;
     upCommands;
     slices;
     lastSlice;
-    constructor(colour, downCommands, upCommands, count=127){
+    constructor(colour, downCommands: Commander, upCommands: Commander, count=127){
         super(colour, "jump");
         this.downCommands = downCommands;
         this.upCommands = upCommands;
@@ -1370,7 +1363,6 @@ class OptionsTrigger extends LCXLController {
     }
 
     handleProcessValueChanged(activeDevice, value){
-        // LOG("---------- OptionsTrigger handleProcessValueChanged value: " + value);
         var sliceNow = 0;
         for(var i=0; i < this.count; i++) {
             if(value <= this.slices[i] || i == this.count-1) {
@@ -1379,14 +1371,9 @@ class OptionsTrigger extends LCXLController {
             }
         }
 
-        // LOG("---------- OptionsTrigger sliceNow: " + sliceNow);
-        // LOG("---------- OptionsTrigger lastSlice: " + this.lastSlice);
-
         if( sliceNow < this.lastSlice)
         {
             var difference = this.lastSlice - sliceNow;
-            // LOG("---------- OptionsTrigger sliceNow < this.lastSlice difference:" + difference);
-
             for(var i=0; i < difference; i++)
             {
                 this.downCommands.triggerAll(activeDevice)
@@ -1394,8 +1381,6 @@ class OptionsTrigger extends LCXLController {
         } else if( sliceNow > this.lastSlice)
         {
             var difference =  sliceNow - this.lastSlice;
-            // LOG("---------- OptionsTrigger sliceNow > this.lastSlice difference:" + difference);
-
             for(var i=0; i < difference; i++)
             {
                 this.upCommands.triggerAll(activeDevice)
@@ -2042,6 +2027,25 @@ var zoomKnob = function(colour, surface, page) {
     return zoom;
 }
 
+var zoomVerticllyKnob = function(colour, surface, page) {
+    var zoom = new OptionsTrigger(colour, 
+        new Commander("zoomOut").
+        addTriggerCommand(surface, page, 'Zoom', 'Zoom Out Vertically'),
+        new Commander("zoomIn").
+            addTriggerCommand(surface, page, 'Zoom', 'Zoom In Vertically'),     
+        32);
+    return zoom;
+}
+
+var zoomHorizontallyKnob = function(colour, surface, page) {
+    var zoom = new OptionsTrigger(colour, 
+        new Commander("zoomOut").
+        addTriggerCommand(surface, page, 'Zoom', 'Zoom Out'),
+        new Commander("zoomIn").
+            addTriggerCommand(surface, page, 'Zoom', 'Zoom In'),
+        32);
+    return zoom;
+}
 //-----------------------------------------------------------------------------
 // 7. Launch Control Setup
 //-----------------------------------------------------------------------------
@@ -2180,11 +2184,15 @@ setTransportEditTrackButtons(PageSends);
 var PageInstrument = new LCXLPageTrack("Instrument", deviceDriver, lcxlEncoders);
 
 // Top two rows of knobs (except for the last two) are assignable in the GUI.
-for( var i = 0; i < 6; i++) {
+for( var i = 0; i < 5; i++) {
     PageInstrument.setKnobTop( new Variable(Orange), i);
     PageInstrument.setKnobMiddle( new Variable(Orange), i);
 
 }
+
+
+PageInstrument.setKnobTop(zoomHorizontallyKnob(Lime, deviceDriver.mSurface, PageInstrument.page),5)
+PageInstrument.setKnobMiddle(zoomVerticllyKnob(Lime, deviceDriver.mSurface, PageInstrument.page),5)
 
 PageInstrument.setKnobTop(zoomKnob(Lime, deviceDriver.mSurface, PageInstrument.page),6)
 PageInstrument.setKnobMiddle(new Switch(Red.high, Red.off).value(PageInstrument.page.mHostAccess.mFocusedQuickControls.mFocusLockedValue ),6)

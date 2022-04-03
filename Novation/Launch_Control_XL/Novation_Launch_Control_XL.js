@@ -947,21 +947,18 @@ var Commander = /** @class */ (function () {
     };
     Commander.prototype.addTriggerValue = function (surface, page, binding) {
         var element = surface.makeCustomValueVariable(this.name + this.elements.length);
-        // LOG("value- " + JSON.stringify(element))
         page.makeValueBinding(element, binding).setTypeToggle();
         this.elements.push(element);
         return this;
     };
     Commander.prototype.addTriggerCommand = function (surface, page, commandCategory, commandName) {
         var element = surface.makeCustomValueVariable(this.name + this.elements.length);
-        // LOG("command- " + JSON.stringify(element))
         page.makeCommandBinding(element, commandCategory, commandName);
         this.elements.push(element);
         return this;
     };
     Commander.prototype.addTriggerAction = function (surface, page, binding) {
         var element = surface.makeCustomValueVariable(this.name + this.elements.length);
-        // LOG("action- " + JSON.stringify(element))
         page.makeActionBinding(element, binding);
         this.elements.push(element);
         return this;
@@ -972,13 +969,10 @@ var Commander = /** @class */ (function () {
     Commander.prototype.trigger = function (activeDevice, index, value) {
         if (index === void 0) { index = 0; }
         if (value === void 0) { value = 1; }
-        var element = this.elements[index];
-        // LOG("triggering: " + element + " " + i + " value: " + value)
         this.elements[index].setProcessValue(activeDevice, value);
     };
     Commander.prototype.triggerAll = function (activeDevice, value) {
         if (value === void 0) { value = 1; }
-        // LOG("trigger: " + this.elements.length )
         for (var i = 0; i < this.elements.length; i++) {
             this.trigger(activeDevice, i, value);
         }
@@ -1059,6 +1053,50 @@ var Options = /** @class */ (function (_super) {
         }
     };
     return Options;
+}(LCXLController));
+var OptionsTrigger = /** @class */ (function (_super) {
+    __extends(OptionsTrigger, _super);
+    function OptionsTrigger(colour, downCommands, upCommands, count) {
+        if (count === void 0) { count = 127; }
+        var _this = _super.call(this, colour, "jump") || this;
+        _this.downCommands = downCommands;
+        _this.upCommands = upCommands;
+        _this.slices = [];
+        _this.registerEventProcessValueChange = true;
+        if (count > 127 || count < 0) {
+            count = 127;
+        }
+        _this.count = count;
+        _this.lastSlice = -1;
+        var size = 1 / _this.count;
+        for (var i = 0; i < _this.count; i++) {
+            _this.slices.push((i + 1) * size);
+        }
+        return _this;
+    }
+    OptionsTrigger.prototype.handleProcessValueChanged = function (activeDevice, value) {
+        var sliceNow = 0;
+        for (var i = 0; i < this.count; i++) {
+            if (value <= this.slices[i] || i == this.count - 1) {
+                sliceNow = i;
+                break;
+            }
+        }
+        if (sliceNow < this.lastSlice) {
+            var difference = this.lastSlice - sliceNow;
+            for (var i = 0; i < difference; i++) {
+                this.downCommands.triggerAll(activeDevice);
+            }
+        }
+        else if (sliceNow > this.lastSlice) {
+            var difference = sliceNow - this.lastSlice;
+            for (var i = 0; i < difference; i++) {
+                this.upCommands.triggerAll(activeDevice);
+            }
+        }
+        this.lastSlice = sliceNow;
+    };
+    return OptionsTrigger;
 }(LCXLController));
 // Like Options, but manipulates another encoder's colour used to change the colour of
 // an LED based on a Glide (fader) which doesn't have it's own LED.
@@ -1582,6 +1620,26 @@ var setTransportEditTrackButtonsInstrument = function (lcxlPage) {
     lcxlPage.setButtonBottom(new Toggle(Lime).value(lcxlPage.page.mHostAccess.mTrackSelection.mMixerChannel.mValue.mInstrumentOpen), 7);
     lcxlPage.sideButtons(trackButtonCommands(lcxlPage.page));
 };
+var zoomKnob = function (colour, surface, page) {
+    var zoom = new OptionsTrigger(colour, new Commander("zoomOut").
+        addTriggerCommand(surface, page, 'Zoom', 'Zoom Out').
+        addTriggerCommand(surface, page, 'Zoom', 'Zoom Out Vertically'), new Commander("zoomIn").
+        addTriggerCommand(surface, page, 'Zoom', 'Zoom In').
+        addTriggerCommand(surface, page, 'Zoom', 'Zoom In Vertically'), 32);
+    return zoom;
+};
+var zoomVerticllyKnob = function (colour, surface, page) {
+    var zoom = new OptionsTrigger(colour, new Commander("zoomOut").
+        addTriggerCommand(surface, page, 'Zoom', 'Zoom Out Vertically'), new Commander("zoomIn").
+        addTriggerCommand(surface, page, 'Zoom', 'Zoom In Vertically'), 32);
+    return zoom;
+};
+var zoomHorizontallyKnob = function (colour, surface, page) {
+    var zoom = new OptionsTrigger(colour, new Commander("zoomOut").
+        addTriggerCommand(surface, page, 'Zoom', 'Zoom Out'), new Commander("zoomIn").
+        addTriggerCommand(surface, page, 'Zoom', 'Zoom In'), 32);
+    return zoom;
+};
 //-----------------------------------------------------------------------------
 // 7. Launch Control Setup
 //-----------------------------------------------------------------------------
@@ -1683,13 +1741,17 @@ setTransportEditTrackButtons(PageSends);
 // -----------------------------------------------------------------------------
 var PageInstrument = new LCXLPageTrack("Instrument", deviceDriver, lcxlEncoders);
 // Top two rows of knobs (except for the last two) are assignable in the GUI.
-for (var i = 0; i < 7; i++) {
+for (var i = 0; i < 5; i++) {
     PageInstrument.setKnobTop(new Variable(Orange), i);
     PageInstrument.setKnobMiddle(new Variable(Orange), i);
 }
+PageInstrument.setKnobTop(zoomHorizontallyKnob(Lime, deviceDriver.mSurface, PageInstrument.page), 5);
+PageInstrument.setKnobMiddle(zoomVerticllyKnob(Lime, deviceDriver.mSurface, PageInstrument.page), 5);
+PageInstrument.setKnobTop(zoomKnob(Lime, deviceDriver.mSurface, PageInstrument.page), 6);
+PageInstrument.setKnobMiddle(new Switch(Red.high, Red.off).value(PageInstrument.page.mHostAccess.mFocusedQuickControls.mFocusLockedValue), 6);
 // smart control
-PageInstrument.setKnobTop(new VariableScaled(Red).value(PageInstrument.page.mHostAccess.mMouseCursor.mValueUnderMouse), 7);
-PageInstrument.setKnobMiddle(new Switch(Amber.low, Red.high).value(PageInstrument.page.mHostAccess.mMouseCursor.mValueLocked), 7);
+PageInstrument.setKnobTop(new VariableScaled(Green).value(PageInstrument.page.mHostAccess.mMouseCursor.mValueUnderMouse), 7);
+PageInstrument.setKnobMiddle(new Switch(Green.off, Green.med).value(PageInstrument.page.mHostAccess.mMouseCursor.mValueLocked), 7);
 // QCs
 PageInstrument.lowerKnobRow(focusedQuickControls(Red, PageInstrument.page));
 PageInstrument.faders(trackQuickControlsGlide(PageInstrument.page));
@@ -1697,4 +1759,36 @@ PageInstrument.faders(trackQuickControlsGlide(PageInstrument.page));
 PageInstrument.topButtonRow(nudgeButtons());
 // Transport with instrument instead of edit channel
 setTransportEditTrackButtonsInstrument(PageInstrument);
-
+// Cue For 4 piece recording
+// -----------------------------------------------------------------------------
+// WIP Should work, but I can't compleatly test this right now
+// if 4 cue channels are set this controls the send for the selected track
+// with talkback at the top, switch it on, then it's talkback volume.
+// var cueTrackColumn = function (surface, page, index) {
+//     var cueChannel = page.mHostAccess.mControlRoom.getCueChannelByIndex(index);
+//     var cueChannelTalkback = new VariableSwitch(Yellow, new Commander("cue" + index + "Talkback").addTriggerValue(surface, page, cueChannel.mTalkbackEnabledValue), "0", "pickup").value(cueChannel.mTalkbackLevelValue);
+//     var cueSend = page.mHostAccess.mTrackSelection.mMixerChannel.mCueSends.getByIndex(index);
+//     var cueTrackPrepost = new Switch(Lime.high, Orange.high).value(cueSend.mPrePost);
+//     var cueTrackPan = new Variable(Amber).value(cueSend.mPan);
+//     var cueTrackLevel = new Glide().value(cueSend.mLevel);
+//     var cueTrackOn = new Toggle(Lime).value(cueSend.mOn);
+//     return [cueChannelTalkback, cueTrackPrepost, cueTrackPan, cueTrackLevel, cueTrackOn];
+// };
+// // Control one of 4 cue channels.  
+// var cueChannelColumn = function (surface, page, index) {
+//     var cueChannel = page.mHostAccess.mControlRoom.getCueChannelByIndex(index);
+//     var cusChannelBypassInserts = new Switch(Lime.high, Orange.high).value(cueChannel.mBypassInserts);
+//     var cusChannelClickPan = new Variable(Amber).value(cueChannel.mMetronomeClickPanValue);
+//     var cusChanneClickSwitch = new VariableSwitch(Green, new Commander("cue" + index + "Metronome").addTriggerValue(surface, page, cueChannel.mMetronomeClickActiveValue), "0", "pickup").value(cueChannel.mMetronomeClickLevelValue);
+//     var cusChannelLevel = new Glide().value(cueChannel.mLevelValue);
+//     var cusChannelMute = new Toggle(Green).value(cueChannel.mMuteValue);
+//     return [cusChannelBypassInserts, cusChannelClickPan, cusChanneClickSwitch, cusChannelLevel, cusChannelMute];
+// };
+// var PageCue = new LCXLPageTrack("Cue", deviceDriver, lcxlEncoders);
+// for (var i = 0; i < 4; i++) {
+//     PageCue.columnAboveButtomBotton(cueChannelColumn(deviceDriver.mSurface, PageCue.page, i), i);
+// }
+// for (var i = 4; i < 8; i++) {
+//     PageCue.columnAboveButtomBotton(cueTrackColumn(deviceDriver.mSurface, PageCue.page, i - 4), i);
+// }
+// setTransportEditTrackButtons(PageCue);
